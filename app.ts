@@ -7,11 +7,19 @@ import authRoutes from "./src/routes/authRoutes";
 import { v2 as cloudinary } from "cloudinary";
 import fileUpload from "express-fileupload";
 import { errorHandler } from "./src/middleware/errorHandler";
+import cors from 'cors'
 
 config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.use(
+  cors({
+    origin: ["http://localhost:3000"],
+    credentials: true
+  })
+);
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
