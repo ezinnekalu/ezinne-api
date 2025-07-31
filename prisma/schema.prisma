@@ -26,11 +26,13 @@ model User {
 }
 
 model Topics {
-  id         String         @id @default(uuid())
-  name       String         @unique
-  posts      Posts[]
-  userId     String
-  user       User           @relation(fields: [userId], references: [id])
+  id            String         @id @default(uuid())
+  name          String         @unique
+  description   String
+  image         String
+  posts         Posts[]
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
 }
 
 model Posts {

@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
 
-const createTips = async (req: any, res: any) => {
+const createTips = async (req: any, res: any, next: NextFunction) => {
   try {
     const userId = req.user.userId;
     if (!userId) {
@@ -35,23 +35,21 @@ const createTips = async (req: any, res: any) => {
       },
     });
     return res.status(StatusCodes.CREATED).json(tip);
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while creating tip",
-    });
+  } catch (error) {
+    next(error)
   }
 };
-const getAllTips = async (req: Request, res: Response) => {
+
+const getAllTips = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tips = await prisma.tips.findMany();
     return res.status(StatusCodes.OK).json({ data: tips });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while fetching tips",
-    });
+  } catch (error) {
+    next(error)
   }
 };
-const getTip = async (req: Request, res: Response) => {
+
+const getTip = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const tipId = await prisma.tips.findUnique({
@@ -63,13 +61,12 @@ const getTip = async (req: Request, res: Response) => {
       });
     }
     return res.status(StatusCodes.OK).json({ data: tipId });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while fetching the tip",
-    });
+  } catch (error) {
+    next(error)
   }
 };
-const updateTip = async (req: any, res: any) => {
+
+const updateTip = async (req: any, res: any, next: NextFunction) => {
   try {
     const userId = req.user.userId;
     const { id } = req.params;
@@ -98,13 +95,12 @@ const updateTip = async (req: any, res: any) => {
       },
     });
     return res.status(StatusCodes.OK).json(updatedTip)
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while updating tip",
-    });
+  } catch (error) {
+    next(error)
   }
 };
-const deleteTip = async (req: Request, res: Response) => {
+
+const deleteTip = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const existingTip = await prisma.tips.findUnique({
@@ -121,10 +117,8 @@ const deleteTip = async (req: Request, res: Response) => {
     return res.status(StatusCodes.OK).json({
       message: "Tip Deleted successfully",
     });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while deleting tip",
-    });
+  } catch (error) {
+    next(error)
   }
 };
 

@@ -1,10 +1,10 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
-const createPost = async (req: any, res: Response) => {
+const createPost = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
@@ -73,14 +73,12 @@ const createPost = async (req: any, res: Response) => {
       ...postData,
       topic: postData.topic.name,
     });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "Error occurred while creating the post",
-    });
+  } catch (error) {
+    next(error)
   }
 };
 
-const getAllPosts = async (req: Request, res: Response) => {
+const getAllPosts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const posts = await prisma.posts.findMany({
       include: {
@@ -94,14 +92,12 @@ const getAllPosts = async (req: Request, res: Response) => {
     return res.status(StatusCodes.OK).json({
       data: posts,
     });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "Error getting posts",
-    });
+  } catch (error) {
+    next(error)
   }
 };
 
-const getPost = async (req: Request, res: Response) => {
+const getPost = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const postId = await prisma.posts.findUnique({
@@ -122,14 +118,12 @@ const getPost = async (req: Request, res: Response) => {
     return res.status(StatusCodes.OK).json({
       data: postId,
     });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while getting post",
-    });
+  } catch (error) {
+    next(error)
   }
 };
 
-const updatePost = async (req: any, res: any) => {
+const updatePost = async (req: any, res: any, next: NextFunction) => {
   try {
     const userId = req.user.userId;
     const { id } = req.params;
@@ -191,13 +185,13 @@ const updatePost = async (req: any, res: any) => {
       },
     });
     return res.status(StatusCodes.OK).json(updatedPost)
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while updating post",
-    });
+  } catch (error) {
+    next(error)
   }
 };
-const deletePost = async (req: Request, res: Response) => {
+
+const deletePost = async (req: Request, res: Response, next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const existingProject = await prisma.posts.findUnique({
@@ -214,10 +208,8 @@ const deletePost = async (req: Request, res: Response) => {
     return res
       .status(StatusCodes.OK)
       .json({ message: "Post deleted successfully" });
-  } catch (error: any) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: error.message || "An error occurred while deleting the post",
-    });
+  } catch (error) {
+    next(error)
   }
 };
 
