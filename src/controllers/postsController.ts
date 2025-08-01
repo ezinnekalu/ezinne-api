@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { Prisma } from "../generated/prisma";
 
 const createPost = async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -74,26 +75,68 @@ const createPost = async (req: any, res: Response, next: NextFunction) => {
       topic: postData.topic.name,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
 const getAllPosts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const posts = await prisma.posts.findMany({
-      include: {
-        topic: {
-          select: {
-            name: true,
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 6;
+    const skip = (page - 1) * limit;
+    const search = (req.query.search as string)?.trim() || "";
+
+    const searchFilter = search
+      ? {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              content: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [posts, totalPosts] = await Promise.all([
+      prisma.posts.findMany({
+        where: searchFilter,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          topic: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.posts.count({
+        where: searchFilter,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalPosts / limit);
+
     return res.status(StatusCodes.OK).json({
+      currentPage: page,
+      totalPages,
+      totalPosts,
+      perPage: limit,
       data: posts,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -119,7 +162,7 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
       data: postId,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -184,14 +227,13 @@ const updatePost = async (req: any, res: any, next: NextFunction) => {
         },
       },
     });
-    return res.status(StatusCodes.OK).json(updatedPost)
+    return res.status(StatusCodes.OK).json(updatedPost);
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
-const deletePost = async (req: Request, res: Response, next: NextFunction
-) => {
+const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const existingProject = await prisma.posts.findUnique({
@@ -209,7 +251,7 @@ const deletePost = async (req: Request, res: Response, next: NextFunction
       .status(StatusCodes.OK)
       .json({ message: "Post deleted successfully" });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
