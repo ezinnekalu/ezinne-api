@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
+import { Prisma } from "../generated/prisma";
 
 const createTips = async (req: any, res: any, next: NextFunction) => {
   try {
@@ -42,8 +43,50 @@ const createTips = async (req: any, res: any, next: NextFunction) => {
 
 const getAllTips = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tips = await prisma.tips.findMany();
-    return res.status(StatusCodes.OK).json({ data: tips });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 6;
+    const skip = (page - 1) * limit;
+    const search = (req.query.search as string)?.trim() || "";
+
+    const searchFilter = search
+      ? {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [tips, totalTips] = await Promise.all([
+      prisma.tips.findMany({
+        where: searchFilter,
+        skip,
+        take: limit,
+      }),
+      prisma.tips.count({
+        where: searchFilter
+      })
+    ]) 
+
+    const totalPages = Math.ceil(totalTips / limit)
+
+    return res.status(StatusCodes.OK).json({ 
+      currentPage: page,
+      totalPages,
+      totalTips,
+      perPage: limit,
+      data: tips 
+    });
   } catch (error) {
     next(error)
   }

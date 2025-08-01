@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { Prisma } from "../generated/prisma";
 
 const createTopic = async (req: any, res: any, next: NextFunction) => {
   try {
@@ -80,21 +81,62 @@ const getAllTopics = async (
   next: NextFunction
 ) => {
   try {
-    const topic = await prisma.topics.findMany({
-      include: {
-        posts: {
-          select: {
-            id: true,
-            title: true,
-            image: true,
-            content: true,
-            createdAt: true,
-            updatedAt: true,
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 6;
+    const skip = (page - 1) * limit;
+    const search = (req.query.search as string)?.trim() || "";
+
+    const searchFilter = search
+      ? {
+          OR: [
+            {
+              name: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [topic, totalTopic] = await Promise.all([
+      prisma.topics.findMany({
+        where: searchFilter,
+        skip,
+        take: limit,
+        include: {
+          posts: {
+            select: {
+              id: true,
+              title: true,
+              image: true,
+              content: true,
+              createdAt: true,
+              updatedAt: true,
+            },
           },
         },
-      },
+      }),
+      prisma.topics.count({
+        where: searchFilter
+      })
+    ]) 
+
+    const totalPages = Math.ceil(totalTopic / limit)
+
+    return res.status(StatusCodes.OK).json({ 
+      currentPage: page,
+      totalPages,
+      totalTopic,
+      perPage: limit,
+      data: topic 
     });
-    return res.status(StatusCodes.OK).json({ data: topic });
   } catch (error) {
     next(error);
   }
