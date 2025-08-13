@@ -3,12 +3,11 @@ import prisma from "../prismaClient";
 import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcryptjs";
 import { createJWT } from "../utils/jwt";
-import validator from "validator";
 
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  sameSite: "none" as const,
   maxAge: 24 * 60 * 60 * 1000, // 1 day
 }
 
@@ -111,7 +110,7 @@ const logout = async (req: Request, res: Response) => {
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict"
+      sameSite: "none"
     })
 
     return res.status(StatusCodes.OK).json({
