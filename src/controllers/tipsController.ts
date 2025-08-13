@@ -3,23 +3,16 @@ import { StatusCodes } from "http-status-codes";
 import prisma from "../prismaClient";
 import { Prisma } from "../generated/prisma";
 
-const createTips = async (req: any, res: any, next: NextFunction) => {
-  try {
-    const userId = req.user.userId;
-    if (!userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "You must be logged in to create tips",
-      });
-    }
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    name: string;
+  };
+}
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "User not found please login again",
-      });
-    }
+const createTips = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
     const { title, description } = req.body;
     if (!title || !description) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -31,7 +24,7 @@ const createTips = async (req: any, res: any, next: NextFunction) => {
         title,
         description,
         user: {
-          connect: { id: req.user.userId },
+          connect: { id: req.user!.userId },
         },
       },
     });
@@ -109,9 +102,9 @@ const getTip = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const updateTip = async (req: any, res: any, next: NextFunction) => {
+const updateTip = async (req: AuthRequest, res: any, next: NextFunction) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { id } = req.params;
     const existingTip = await prisma.tips.findUnique({
       where: { id },
@@ -133,7 +126,7 @@ const updateTip = async (req: any, res: any, next: NextFunction) => {
         title,
         description,
         user: {
-          connect: { id: req.user.userId },
+          connect: { id: req.user!.userId },
         },
       },
     });
@@ -143,7 +136,7 @@ const updateTip = async (req: any, res: any, next: NextFunction) => {
   }
 };
 
-const deleteTip = async (req: Request, res: Response, next: NextFunction) => {
+const deleteTip = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const existingTip = await prisma.tips.findUnique({

@@ -5,23 +5,16 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import { Prisma } from "../generated/prisma";
 
-const createTopic = async (req: any, res: any, next: NextFunction) => {
-  try {
-    const userId = req.user.userId;
-    if (!userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "You must be logged in to create a project",
-      });
-    }
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    name: string;
+  };
+}
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "User not found please login again",
-      });
-    }
+const createTopic = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
     const { name, description } = req.body;
     if (!name || !description) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -29,7 +22,7 @@ const createTopic = async (req: any, res: any, next: NextFunction) => {
       });
     }
 
-    const imageFile = req.files?.image;
+    const imageFile = req.files?.image as any;
     if (!imageFile || !imageFile.mimetype.startsWith("image")) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file is required and must be an image",
@@ -53,7 +46,7 @@ const createTopic = async (req: any, res: any, next: NextFunction) => {
         description,
         image: upload.secure_url,
         user: {
-          connect: { id: req.user.userId },
+          connect: { id: req.user!.userId },
         },
       },
       include: {
@@ -76,7 +69,7 @@ const createTopic = async (req: any, res: any, next: NextFunction) => {
 };
 
 const getAllTopics = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -171,9 +164,9 @@ const getTopic = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const updateTopic = async (req: any, res: any, next: NextFunction) => {
+const updateTopic = async (req: AuthRequest, res: any, next: NextFunction) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { id } = req.params;
     const { name, description } = req.body;
     const existingTopic = await prisma.topics.findUnique({
@@ -191,13 +184,13 @@ const updateTopic = async (req: any, res: any, next: NextFunction) => {
     }
 
     // upload image to cloudinary and verify if it is an image
-    const imageFile = req.files?.image;
+    const imageFile = req.files?.image as any;
     if (!imageFile || !imageFile.mimetype.startsWith("image")) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file is required and must be an image",
       });
     }
-    if (imageFile > 2 * 1024 * 1024) {
+    if (imageFile.size > 2 * 1024 * 1024) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file must be under 2MB",
       });
@@ -214,7 +207,7 @@ const updateTopic = async (req: any, res: any, next: NextFunction) => {
         name,
         description,
         user: {
-          connect: { id: req.user.userId },
+          connect: { id: req.user!.userId },
         },
       },
       include: {
@@ -236,7 +229,7 @@ const updateTopic = async (req: any, res: any, next: NextFunction) => {
   }
 };
 
-const deleteTopic = async (req: Request, res: Response, next: NextFunction) => {
+const deleteTopic = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const existingTopic = await prisma.topics.findUnique({

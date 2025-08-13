@@ -3,6 +3,7 @@ import prisma from "../prismaClient";
 import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcryptjs";
 import { createJWT } from "../utils/jwt";
+import jwt from 'jsonwebtoken'
 
 const cookieOptions = {
   httpOnly: true,
@@ -60,7 +61,6 @@ const register = async (req: Request, res: Response) => {
 
     return res.status(StatusCodes.CREATED).json({
       user: { id: user.id, name: user.name },
-      token,
     });
   } catch (error: any) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -96,7 +96,6 @@ const login = async (req: Request, res: Response) => {
 
     return res.status(StatusCodes.OK).json({
       user: { id: user.id, name: user.name },
-      token,
     });
   } catch (error: any) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -110,7 +109,8 @@ const logout = async (req: Request, res: Response) => {
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none"
+      sameSite: "none",
+      path: "/",
     })
 
     return res.status(StatusCodes.OK).json({
@@ -123,4 +123,44 @@ const logout = async (req: Request, res: Response) => {
   }
 }
 
-export { register, login, logout };
+const verifyToken = async (req: Request, res: Response) => {
+  try {
+    // Get token from cookie
+    const token = req.cookies.token
+
+    if (!token) {
+       return res.status(StatusCodes.UNAUTHORIZED).json({
+         message: "No token provided",
+       });
+    }
+
+    // verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: string
+      name: string
+    }
+
+    // Check if user still exists
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, name: true, email: true }
+    })
+
+    if (!user) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "User not found"
+      })
+    }
+
+    return res.status(StatusCodes.OK).json({
+      valid: true,
+      user: { id: user.id, name: user.name, email: user.email }
+    })
+  } catch (error: any) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      message: error.message || "Invalid token" 
+    })
+  }
+}
+
+export { register, login, logout, verifyToken };

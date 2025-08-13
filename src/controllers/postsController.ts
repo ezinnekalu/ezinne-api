@@ -5,22 +5,16 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import { Prisma } from "../generated/prisma";
 
-const createPost = async (req: any, res: Response, next: NextFunction) => {
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    name: string;
+  };
+}
+
+const createPost = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "You must be logged in to create a post",
-      });
-    }
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "User not found please login again",
-      });
-    }
+    const userId = req.user!.userId;
     let { title, slug, content, topicId } = req.body;
     slug = title
       .toLowerCase()
@@ -33,13 +27,13 @@ const createPost = async (req: any, res: Response, next: NextFunction) => {
     }
 
     // upload image to cloudinary and verify if it is an image
-    const imageFile = req.files?.image;
+    const imageFile = req.files?.image as any;
     if (!imageFile || !imageFile.mimetype.startsWith("image")) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file is required and must be an image",
       });
     }
-    if (imageFile > 2 * 1024 * 1024) {
+    if (imageFile.size > 2 * 1024 * 1024) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file must be under 2MB",
       });
@@ -166,9 +160,9 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const updatePost = async (req: any, res: any, next: NextFunction) => {
+const updatePost = async (req: AuthenticatedRequest, res: any, next: NextFunction) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { id } = req.params;
     const existingPost = await prisma.posts.findUnique({
       where: { id },
@@ -191,13 +185,13 @@ const updatePost = async (req: any, res: any, next: NextFunction) => {
     }
 
     // upload image to cloudinary and verify if it is an image
-    const imageFile = req.files?.image;
+    const imageFile = req.files?.image as any;
     if (!imageFile || !imageFile.mimetype.startsWith("image")) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file is required and must be an image",
       });
     }
-    if (imageFile > 2 * 1024 * 1024) {
+    if (imageFile.size > 2 * 1024 * 1024) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Image file must be under 2MB",
       });

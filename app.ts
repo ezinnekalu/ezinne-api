@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import fileUpload from "express-fileupload";
 import { errorHandler } from "./src/middleware/errorHandler";
 import cors from 'cors'
+import cookieParser from "cookie-parser";
 
 config();
 
@@ -33,6 +34,8 @@ app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: "./tmp/"
 }))
+
+app.use(cookieParser());
 
 // Routes
 app.use("/api/v1", topicsRouter);
