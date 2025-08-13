@@ -5,6 +5,13 @@ import bcrypt from "bcryptjs";
 import { createJWT } from "../utils/jwt";
 import validator from "validator";
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+}
+
 const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
@@ -50,6 +57,8 @@ const register = async (req: Request, res: Response) => {
 
     const token = createJWT({ userId: user.id, name: user.name });
 
+    res.cookie("token", token, cookieOptions)
+
     return res.status(StatusCodes.CREATED).json({
       user: { id: user.id, name: user.name },
       token,
@@ -83,6 +92,9 @@ const login = async (req: Request, res: Response) => {
     }
 
     const token = createJWT({ userId: user.id, name: user.name });
+
+    res.cookie("token", token, cookieOptions)
+
     return res.status(StatusCodes.OK).json({
       user: { id: user.id, name: user.name },
       token,
@@ -94,4 +106,22 @@ const login = async (req: Request, res: Response) => {
   }
 };
 
-export { register, login };
+const logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    })
+
+    return res.status(StatusCodes.OK).json({
+      message: "Logged out successfully"
+    })
+  } catch (error: any) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: error.message || "An error occurred while logging out",
+    });
+  }
+}
+
+export { register, login, logout };
