@@ -19,6 +19,8 @@ app.use(
   cors({
     origin: ["http://localhost:3000", "https://ezinne-kalu.vercel.app"],
     credentials: true,
+    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 

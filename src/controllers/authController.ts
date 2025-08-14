@@ -11,6 +11,7 @@ const cookieOptions = {
   sameSite: "none" as const,
   maxAge: 24 * 60 * 60 * 1000, // 1 day
   path: "/",
+  domain: undefined
 };
 
 const register = async (req: Request, res: Response) => {
@@ -92,24 +93,11 @@ const login = async (req: Request, res: Response) => {
     }
 
     const token = createJWT({ userId: user.id, name: user.name });
-    console.log(
-      "🎟️ Generated token (first 20 chars):",
-      token.substring(0, 20) + "..."
-    );
 
     console.log("🍪 About to set cookie with options:", cookieOptions);
 
     res.cookie("token", token, cookieOptions);
     console.log("🍪 Cookie set successfully");
-
-    res.header(
-      "Set-Cookie",
-      `token=${token}; HttpOnly; Path=/; Max-Age=${
-        cookieOptions.maxAge
-      }; SameSite=${cookieOptions.sameSite}${
-        cookieOptions.secure ? "; Secure" : ""
-      }`
-    );
 
     console.log("✅ Login successful for user:", user.name);
 
