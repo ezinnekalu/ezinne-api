@@ -28,7 +28,6 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-app.use(express.json());
 
 app.use(fileUpload({
   useTempFiles: true,
@@ -36,6 +35,7 @@ app.use(fileUpload({
 }))
 
 app.use(cookieParser());
+app.use(express.json());
 
 // Routes
 app.use("/api/v1", topicsRouter);
