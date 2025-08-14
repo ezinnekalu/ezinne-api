@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: true,
   sameSite: "none" as const,
   maxAge: 24 * 60 * 60 * 1000, // 1 day
   path: "/",
@@ -129,7 +129,7 @@ const logout = async (req: Request, res: Response) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "none",
       path: "/",
     });
