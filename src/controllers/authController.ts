@@ -94,13 +94,7 @@ const login = async (req: Request, res: Response) => {
 
     const token = createJWT({ userId: user.id, name: user.name });
 
-    console.log("🍪 About to set cookie with options:", cookieOptions);
-
     res.cookie("token", token, cookieOptions);
-    console.log("🍪 Cookie set successfully");
-
-    console.log("✅ Login successful for user:", user.name);
-
     return res.status(StatusCodes.OK).json({
       user: { id: user.id, name: user.name },
       token,
